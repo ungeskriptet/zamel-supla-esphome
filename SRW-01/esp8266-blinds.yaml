@@ -1,0 +1,88 @@
+esphome:
+  name: esp8266-blinds-downstairs
+  friendly_name: esp8266-blinds-downstairs
+
+esp8266:
+  board: esp_wroom_02
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Esp8266-Blinds-Downstairs"
+    password: !secret ap_password
+
+captive_portal:
+
+web_server:
+  port: 80
+  auth:
+    username: !secret web_server_username
+    password: !secret web_server_password
+
+binary_sensor:
+  # Down
+  - platform: gpio
+    pin:
+      number: GPIO14
+      inverted: True
+      mode:
+        input: True
+    id: button_dowm
+    on_press:
+      - switch.turn_on: blinds_down
+    name: "W dół"
+  # Up
+  - platform: gpio
+    pin:
+      number: GPIO13
+      inverted: True
+      mode:
+        input: True
+    id: button_up
+    on_press:
+      - switch.turn_on: blinds_up
+    name: "Do góry"
+
+switch:
+  # Up
+  - platform: gpio
+    internal: True
+    pin: GPIO5
+    id: blinds_up
+    interlock: [blinds_down]
+    on_turn_on:
+      - delay: 100ms
+      - switch.turn_off: blinds_up
+  # Down
+  - platform: gpio
+    internal: True
+    pin: GPIO12
+    id: blinds_down
+    interlock: [blinds_up]
+    on_turn_on:
+      - delay: 100ms
+      - switch.turn_off: blinds_down
+
+cover:
+  - platform: template
+    open_action:
+      - switch.turn_on: blinds_up
+    close_action:
+      - switch.turn_on: blinds_down
+    name: "Rolety"
+    assumed_state: True
